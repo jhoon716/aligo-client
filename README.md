@@ -190,3 +190,7 @@ npm test
 ```
 
 Uses `node:test` with mocked `fetch` to verify serialization and error handling.
+
+## License
+
+Licensed under the MIT License. See `LICENSE` for details.
