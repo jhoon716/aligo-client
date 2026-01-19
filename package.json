@@ -19,7 +19,8 @@
     "clean": "rm -rf dist dist-tests",
     "test": "npm run build && tsc -p tsconfig.test.json && node --test \"dist-tests/**/*.js\"",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepack": "npm run build"
   },
   "engines": {
     "node": ">=22"
@@ -30,5 +31,13 @@
     "prettier": "^3.8.0",
     "typescript": "^5.3.3"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:jhoon716/aligo-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jhoon716/aligo-client/issues"
+  },
+  "homepage": "https://github.com/jhoon716/aligo-client#readme"
 }
