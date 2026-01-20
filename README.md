@@ -120,6 +120,7 @@ await client.kakao.sendFriendtalk({
 ## 예제 & 테스트
 
 - 예제: `examples/send-basic.mjs`, `send-mass.mjs`, `check-history.mjs`, `remain-and-cancel.mjs`, `send-alimtalk.mjs`, `send-friendtalk.mjs`
+- TS 예제: `examples-ts/send-basic.ts`, `examples-ts/send-alimtalk.ts` (로컬 실행용 `../src/index.js` import)
 - 빌드 후 실행: `npm run build`
 - 테스트: `npm test` (node:test, fetch 모킹)
 
@@ -183,6 +184,7 @@ Any attachment field accepts `{ data, filename?, contentType? }` where `data` is
 ### Examples
 
 See `examples/` (basic send, mass, history, remain/cancel, alimtalk, friendtalk). Build first: `npm run build`.
+TypeScript examples live in `examples-ts/` (importing from `../src/index.js` for local runs).
 
 ### Testing
 
