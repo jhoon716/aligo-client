@@ -28,37 +28,53 @@ import type {
 } from '../types.js';
 import { HttpClient } from '../http/client.js';
 
-export function createKakaoNamespace(http: HttpClient) {
+export function createKakaoNamespace(http: HttpClient, kakaoToken?: string) {
+  const requireToken = () => {
+    if (!kakaoToken) {
+      throw new AligoError('kakaoToken is required for Kakao API calls (except token.create)');
+    }
+  };
+
+  const withToken = <T>(task: () => Promise<T>): Promise<T> => {
+    requireToken();
+    return task();
+  };
+
   return {
     profile: {
-      requestAuth: (params: KakaoProfileAuthParams) => requestProfileAuth(http, params),
-      requestAdd: (params: KakaoProfileAddParams) => requestProfileAdd(http, params),
-      getCategories: () => getCategories(http),
-      list: (params?: KakaoProfileListParams) => listProfiles(http, params),
+      requestAuth: (params: KakaoProfileAuthParams) =>
+        withToken(() => requestProfileAuth(http, params)),
+      requestAdd: (params: KakaoProfileAddParams) =>
+        withToken(() => requestProfileAdd(http, params)),
+      getCategories: () => withToken(() => getCategories(http)),
+      list: (params?: KakaoProfileListParams) => withToken(() => listProfiles(http, params)),
     },
     token: {
       create: (params: KakaoTokenCreateParams) => createToken(http, params),
     },
     templates: {
-      list: (params: KakaoTemplateListParams) => listTemplates(http, params),
-      create: (params: KakaoCreateTemplateParams) => createTemplate(http, params),
-      update: (params: KakaoUpdateTemplateParams) => updateTemplate(http, params),
-      delete: (params: { senderKey: string; templateCode: string }) => deleteTemplate(http, params),
+      list: (params: KakaoTemplateListParams) => withToken(() => listTemplates(http, params)),
+      create: (params: KakaoCreateTemplateParams) => withToken(() => createTemplate(http, params)),
+      update: (params: KakaoUpdateTemplateParams) => withToken(() => updateTemplate(http, params)),
+      delete: (params: { senderKey: string; templateCode: string }) =>
+        withToken(() => deleteTemplate(http, params)),
       requestReview: (params: { senderKey: string; templateCode: string }) =>
-        requestTemplateReview(http, params),
+        withToken(() => requestTemplateReview(http, params)),
     },
-    sendAlimtalk: (params: KakaoAlimtalkSendParams) => sendAlimtalk(http, params),
-    sendFriendtalk: (params: KakaoFriendtalkSendParams) => sendFriendtalk(http, params),
+    sendAlimtalk: (params: KakaoAlimtalkSendParams) =>
+      withToken(() => sendAlimtalk(http, params)),
+    sendFriendtalk: (params: KakaoFriendtalkSendParams) =>
+      withToken(() => sendFriendtalk(http, params)),
     sendFriendtalkWideList: (params: KakaoFriendtalkWideListParams) =>
-      sendFriendtalkWideList(http, params),
+      withToken(() => sendFriendtalkWideList(http, params)),
     sendFriendtalkCarousel: (params: KakaoFriendtalkCarouselParams) =>
-      sendFriendtalkCarousel(http, params),
+      withToken(() => sendFriendtalkCarousel(http, params)),
     history: {
-      list: (params?: KakaoHistoryListParams) => listHistory(http, params),
-      detail: (params: KakaoHistoryDetailParams) => detailHistory(http, params),
+      list: (params?: KakaoHistoryListParams) => withToken(() => listHistory(http, params)),
+      detail: (params: KakaoHistoryDetailParams) => withToken(() => detailHistory(http, params)),
     },
-    remain: () => getRemain(http),
-    cancel: (params: CancelParams) => cancel(http, params),
+    remain: () => withToken(() => getRemain(http)),
+    cancel: (params: CancelParams) => withToken(() => cancel(http, params)),
   };
 }
 
@@ -123,7 +139,9 @@ async function createToken(
 
   return http.post<KakaoTokenResponse>({
     path: `/akv10/token/create/${time}/${type}`,
-    fields: {},
+    fields: {
+      token: undefined,
+    },
   });
 }
 

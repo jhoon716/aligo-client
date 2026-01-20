@@ -9,6 +9,7 @@ export interface AligoClientOptions {
   userId: string;
   baseUrl?: string;
   kakaoBaseUrl?: string;
+  kakaoToken?: string;
   timeoutMs?: number;
   retry?: RetryOptions;
 }
@@ -425,9 +426,11 @@ export interface KakaoRemainResponse extends KakaoBaseResponse {
   };
 }
 
+export type KakaoTokenUnit = 'y' | 'm' | 'd' | 'h' | 'i' | 's';
+
 export interface KakaoTokenCreateParams {
-  time: string | number;
-  type: string;
+  time: number;
+  type: KakaoTokenUnit;
 }
 
 export type KakaoTokenResponse = KakaoBaseResponse & Record<string, unknown>;

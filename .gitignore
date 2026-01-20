@@ -4,4 +4,4 @@ dist-tests/
 *.tgz
 .DS_Store
 npm-debug.log*
-docs/
+docs/_internal/

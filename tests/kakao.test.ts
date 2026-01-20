@@ -20,6 +20,7 @@ test('kakao auth uses apikey/userid fields and kakao base URL', async () => {
     const client = createAligoClient({
       key: 'k-key',
       userId: 'k-user',
+      kakaoToken: 'kakao-token',
     });
 
     await client.kakao.profile.requestAuth({
@@ -33,6 +34,7 @@ test('kakao auth uses apikey/userid fields and kakao base URL', async () => {
     const encoded = params.toString();
     assert.ok(encoded.includes('apikey=k-key'));
     assert.ok(encoded.includes('userid=k-user'));
+    assert.ok(encoded.includes('token=kakao-token'));
     assert.ok(encoded.includes('plusid=%40channel'));
     assert.ok(encoded.includes('phonenumber=01012341234'));
   } finally {
@@ -58,19 +60,21 @@ test('kakao token uses path params for time and type', async () => {
     const client = createAligoClient({
       key: 'k-key',
       userId: 'k-user',
+      kakaoToken: 'kakao-token',
     });
 
     await client.kakao.token.create({
       time: 30,
-      type: 'alimtalk',
+      type: 'h',
     });
 
-    assert.ok(capturedUrl.endsWith('/akv10/token/create/30/alimtalk'));
+    assert.ok(capturedUrl.endsWith('/akv10/token/create/30/h'));
     assert.ok(capturedBody instanceof URLSearchParams);
     const params = capturedBody as URLSearchParams;
     const encoded = params.toString();
     assert.ok(encoded.includes('apikey=k-key'));
     assert.ok(encoded.includes('userid=k-user'));
+    assert.ok(!encoded.includes('token='));
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -88,6 +92,7 @@ test('kakao code < 0 raises AligoError carrying resultCode', async () => {
   const client = createAligoClient({
     key: 'k-key',
     userId: 'k-user',
+    kakaoToken: 'kakao-token',
   });
 
   try {
@@ -122,6 +127,7 @@ test('kakao friendtalk with image switches to multipart', async () => {
   const client = createAligoClient({
     key: 'k-key',
     userId: 'k-user',
+    kakaoToken: 'kakao-token',
   });
 
   try {

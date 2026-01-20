@@ -34,6 +34,7 @@ export function createAligoClient(options: AligoClientOptions): AligoClient {
     baseUrl: options.kakaoBaseUrl ?? DEFAULT_KAKAO_BASE,
     timeoutMs: options.timeoutMs,
     retry: options.retry,
+    authExtras: options.kakaoToken ? { token: options.kakaoToken } : undefined,
     authKeyField: 'apikey',
     authUserIdField: 'userid',
   };
@@ -44,6 +45,6 @@ export function createAligoClient(options: AligoClientOptions): AligoClient {
   return {
     sms: createSmsNamespace(smsHttp),
     status: createStatusNamespace(smsHttp),
-    kakao: createKakaoNamespace(kakaoHttp),
+    kakao: createKakaoNamespace(kakaoHttp, options.kakaoToken),
   };
 }

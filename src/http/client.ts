@@ -17,6 +17,7 @@ export interface HttpClientConfig {
   baseUrl: string;
   timeoutMs?: number;
   retry?: RetryOptions;
+  authExtras?: Record<string, FieldValue>;
   authKeyField?: string;
   authUserIdField?: string;
 }
@@ -27,8 +28,10 @@ export class HttpClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly retry: Required<RetryOptions>;
+  private readonly authExtras: Record<string, FieldValue>;
   private readonly authKeyField: string;
   private readonly authUserIdField: string;
+  private readonly maskedSecrets: string[];
 
   constructor(options: HttpClientConfig) {
     this.key = options.key;
@@ -37,11 +40,19 @@ export class HttpClient {
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.authKeyField = options.authKeyField ?? 'key';
     this.authUserIdField = options.authUserIdField ?? 'user_id';
+    this.authExtras = options.authExtras ?? {};
 
     const retries = options.retry?.retries ?? 0;
     const factor = options.retry?.factor ?? 2;
     const minTimeoutMs = options.retry?.minTimeoutMs ?? 300;
     this.retry = { retries, factor, minTimeoutMs };
+
+    const secrets = [this.key, this.userId, ...Object.values(this.authExtras)];
+    this.maskedSecrets = Array.from(
+      new Set(
+        secrets.filter((value): value is string => typeof value === 'string' && value.length > 0),
+      ),
+    );
   }
 
   async post<TResponse>(options: RequestOptions): Promise<TResponse> {
@@ -49,6 +60,7 @@ export class HttpClient {
     const fields: Record<string, FieldValue> = {
       [this.authKeyField]: this.key,
       [this.authUserIdField]: this.userId,
+      ...this.authExtras,
       ...options.fields,
     };
 
@@ -106,8 +118,8 @@ export class HttpClient {
       } catch (error) {
         clearTimeout(timeout);
         if (attempt >= this.retry.retries || !shouldRetryError(error)) {
-          if (error instanceof Error && error.message?.includes(this.key)) {
-            error.message = error.message.replace(this.key, maskSecret(this.key));
+          if (error instanceof Error) {
+            this.maskSecretsInMessage(error);
           }
           throw error;
         }
@@ -119,6 +131,16 @@ export class HttpClient {
     }
 
     throw lastError instanceof Error ? lastError : new Error('Request failed');
+  }
+
+  private maskSecretsInMessage(error: Error): void {
+    if (!error.message) return;
+    let message = error.message;
+    for (const secret of this.maskedSecrets) {
+      if (!secret) continue;
+      message = message.split(secret).join(maskSecret(secret));
+    }
+    error.message = message;
   }
 }
 

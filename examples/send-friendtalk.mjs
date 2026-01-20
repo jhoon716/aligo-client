@@ -3,6 +3,7 @@ import { createAligoClient } from '../dist/index.js';
 const client = createAligoClient({
   key: process.env.ALIGO_KEY ?? 'YOUR_API_KEY',
   userId: process.env.ALIGO_USER_ID ?? 'YOUR_USER_ID',
+  kakaoToken: process.env.ALIGO_KAKAO_TOKEN ?? 'YOUR_KAKAO_TOKEN',
 });
 
 async function main() {

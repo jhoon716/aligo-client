@@ -18,7 +18,13 @@ Node 22+ 전용 ESM TypeScript SDK로, 알리고 SMS/LMS/MMS 및 카카오 알�
 npm install aligo-client
 ```
 
-## 빠른 시작 (SMS)
+## 제공 API
+
+API 문서: `docs/api-spec.md`
+
+## 빠른 시작
+
+### 공통
 
 ```ts
 import { createAligoClient } from 'aligo-client';
@@ -27,49 +33,51 @@ const client = createAligoClient({
   key: process.env.ALIGO_KEY ?? 'YOUR_API_KEY',
   userId: process.env.ALIGO_USER_ID ?? 'YOUR_USER_ID',
 });
+```
 
-const result = await client.sms.send({
+### SMS
+
+```ts
+await client.sms.send({
   sender: '01000000000',
   receiver: '01011112222,01033334444',
   msg: 'aligo-client: 기본 전송 예제',
-  testmodeYn: 'Y', // 과금 방지
+  testmodeYn: 'Y',
+});
+```
+
+### 카카오톡 (토큰 발급/사용)
+
+카카오 API는 토큰이 있어야 호출할 수 있습니다. 먼저 토큰을 발급한 뒤, 그 토큰을 클라이언트에 주입해 사용합니다.
+`type`은 시간 단위 코드 `y/m/d/h/i/s`, `time`은 유효시간 값(숫자)입니다.
+
+1) 토큰 발급
+
+```ts
+const tokenResponse = await client.kakao.token.create({
+  time: 30,
+  type: 'h',
+});
+```
+
+2) 토큰 추출
+
+토큰은 `response.token` 형태로 추출해 사용합니다.
+
+```ts
+const tokenValue = tokenResponse.token;
+```
+
+3) 토큰 주입 후 카카오 호출
+
+```ts
+const kakaoClient = createAligoClient({
+  key: process.env.ALIGO_KEY ?? 'YOUR_API_KEY',
+  userId: process.env.ALIGO_USER_ID ?? 'YOUR_USER_ID',
+  kakaoToken: tokenValue,
 });
 
-console.log(result);
-```
-
-## 제공 API (요약)
-
-- SMS: `send`, `sendMass`, `list`, `getDetails`, `cancel`, `status.getRemain`
-- Kakao 프로필: `kakao.profile.requestAuth`, `getCategories`, `requestAdd`, `list`
-- Kakao 토큰: `kakao.token.create` (from `aligoapi` npm package)
-- Kakao 템플릿: `kakao.templates.list/create/update/delete/requestReview`
-- 알림톡: `kakao.sendAlimtalk`
-- 친구톡: `kakao.sendFriendtalk`, `sendFriendtalkWideList`, `sendFriendtalkCarousel`
-- 이력/잔여/취소: `kakao.history.list/detail`, `kakao.remain`, `kakao.cancel`
-
-## 설정 팁
-
-- `timeoutMs`: 기본 30초, 알리고 응답이 느리면 늘려주세요.
-- `retry`: `{ retries, factor, minTimeoutMs }`로 네트워크/5xx만 재시도. 기본 비활성화.
-- `baseUrl`/`kakaoBaseUrl`: 커스텀 프록시나 스테이징 시 오버라이드.
-- 환경 변수 사용 예: `ALIGO_KEY`, `ALIGO_USER_ID`, `ALIGO_SENDER_KEY`, `ALIGO_TEMPLATE_CODE`.
-
-## 첨부/파일
-
-MMS(`sms.send/sendMass`)의 `image1~3`, 친구톡 첨부/와이드/캐러셀 이미지와 템플릿 이미지 모두 `Attachment` 형태 `{ data, filename?, contentType? }`를 받습니다. `data`는 `Blob | File | Buffer | ArrayBuffer | ArrayBufferView` 지원. 첨부가 있으면 자동으로 `multipart/form-data` 전송.
-
-## 잔여/취소 예시
-
-```ts
-const remain = await client.status.getRemain();
-const cancel = await client.sms.cancel({ mid: 123456789 }); // 발송 5분 전까지만 가능
-```
-
-## 카카오 알림톡/친구톡 예시
-
-```ts
-await client.kakao.sendAlimtalk({
+await kakaoClient.kakao.sendAlimtalk({
   senderKey: 'SENDER_KEY',
   templateCode: 'TPL_CODE',
   sender: '01000000000',
@@ -78,121 +86,45 @@ await client.kakao.sendAlimtalk({
       receiver: '01011112222',
       subject: '알림톡 제목',
       message: '알림톡 내용',
-      buttons: [
-        {
-          name: '웹링크',
-          linkType: 'WL',
-          linkTypeName: '웹링크',
-          linkMo: 'https://example.com',
-        },
-      ],
-      failoverSubject: '대체문자 제목',
-      failoverMessage: '대체문자 내용',
     },
   ],
-  failover: 'Y',
   testMode: 'Y',
 });
 ```
 
-```ts
-await client.kakao.sendFriendtalk({
-  senderKey: 'SENDER_KEY',
-  sender: '01000000000',
-  advert: 'Y',
-  messages: [{ receiver: '01011112222', subject: '친구톡 제목', message: '친구톡 내용' }],
-  imageUrl: 'https://smartsms.aligo.in',
-  testMode: 'Y',
-});
-```
+토큰 발급 외의 카카오 호출은 `kakaoToken`이 필요합니다. 토큰이 갱신되면 새 클라이언트를 생성해 교체하세요.
+
+## 첨부/파일
+
+- MMS
+  - `sms.send`/`sms.sendMass`: `image1~3`
+- 카카오톡
+  - 친구톡 이미지: `image`, `fimage`
+  - 와이드/캐러셀 이미지: `item_*_image`, `carousel_*_image`
+  - 템플릿 이미지: `image`
+
+모든 첨부는 `Attachment` 형태 `{ data, filename?, contentType? }`를 받습니다. `data`는 `Blob | File | Buffer | ArrayBuffer | ArrayBufferView` 지원. 첨부가 있으면 자동으로 `multipart/form-data` 전송.
+
+## 설정
+
+- `baseUrl` 기본 `https://apis.aligo.in`, `kakaoBaseUrl` 기본 `https://kakaoapi.aligo.in`
+- `timeoutMs` 기본 30000
+- `retry` 기본 비활성화(네트워크/5xx만, `{ retries, factor, minTimeoutMs }`)
 
 ## 에러 처리
 
 - HTTP 오류/타임아웃 또는 API `result_code < 0`/`code < 0` 시 `AligoError` throw.
 - 에러 객체에는 `resultCode`/`status`/`endpoint`가 담기며, 키는 마스킹.
 
-## 설정 옵션
-
-- `baseUrl` 기본 `https://apis.aligo.in`, `kakaoBaseUrl` 기본 `https://kakaoapi.aligo.in`
-- `timeoutMs` 기본 30000
-- `retry` 기본 비활성화(네트워크/5xx만, `{ retries, factor, minTimeoutMs }`)
-
-## 예제 & 테스트
+## 예제
 
 - 예제: `examples/send-basic.mjs`, `send-mass.mjs`, `check-history.mjs`, `remain-and-cancel.mjs`, `send-alimtalk.mjs`, `send-friendtalk.mjs`
 - TS 예제: `examples-ts/send-basic.ts`, `examples-ts/send-alimtalk.ts` (로컬 실행용 `../src/index.js` import)
 - 빌드 후 실행: `npm run build`
-- 테스트: `npm test` (node:test, fetch 모킹)
 
----
+## 테스트
 
-## English Overview
-
-Node 22+ ESM-only TypeScript SDK for Aligo SMS/LMS/MMS and Kakao Alimtalk/Friendtalk APIs. Specs: `https://smartsms.aligo.in/admin/api/spec.html`, `https://smartsms.aligo.in/shop/kakaoapispec.html`.
-
-### Install
-
-```bash
-npm install aligo-client
-```
-
-### Quick start
-
-```ts
-import { createAligoClient } from 'aligo-client';
-
-const client = createAligoClient({
-  key: process.env.ALIGO_KEY!,
-  userId: process.env.ALIGO_USER_ID!,
-});
-await client.sms.send({
-  sender: '01000000000',
-  receiver: '01011112222',
-  msg: 'hello',
-  testmodeYn: 'Y',
-});
-```
-
-### API surface
-
-- SMS: `send`, `sendMass`, `list`, `getDetails`, `cancel`, `status.getRemain`
-- Kakao profile/category: `kakao.profile.requestAuth/getCategories/requestAdd/list`
-- Kakao templates: `kakao.templates.list/create/update/delete/requestReview`
-- Alimtalk: `kakao.sendAlimtalk`
-- Friendtalk: `kakao.sendFriendtalk`, `sendFriendtalkWideList`, `sendFriendtalkCarousel`
-- History/remain/cancel: `kakao.history.list/detail`, `kakao.remain`, `kakao.cancel`
-
-### Attachments
-
-Any attachment field accepts `{ data, filename?, contentType? }` where `data` is `Blob | File | Buffer | ArrayBuffer | ArrayBufferView`. Multipart is selected automatically when attachments exist.
-
-### Errors
-
-`AligoError` is thrown on HTTP failures or negative result codes. It carries `resultCode/status/endpoint` and masks secrets.
-
-### Configuration
-
-- `baseUrl` default `https://apis.aligo.in`; `kakaoBaseUrl` default `https://kakaoapi.aligo.in`
-- `timeoutMs` default 30000
-- `retry` optional (`retries`, `factor`, `minTimeoutMs`) for network/5xx only
-
-### Notes
-
-- Uses `AligoError` throws (HTTP + API code awareness) and masks secrets in messages.
-- Environment variables you might set: `ALIGO_KEY`, `ALIGO_USER_ID`, `ALIGO_SENDER_KEY`, `ALIGO_TEMPLATE_CODE`.
-
-### Examples
-
-See `examples/` (basic send, mass, history, remain/cancel, alimtalk, friendtalk). Build first: `npm run build`.
-TypeScript examples live in `examples-ts/` (importing from `../src/index.js` for local runs).
-
-### Testing
-
-```bash
-npm test
-```
-
-Uses `node:test` with mocked `fetch` to verify serialization and error handling.
+- `npm test` (node:test, fetch 모킹)
 
 ## License
 
