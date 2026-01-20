@@ -42,6 +42,7 @@ console.log(result);
 
 - SMS: `send`, `sendMass`, `list`, `getDetails`, `cancel`, `status.getRemain`
 - Kakao 프로필: `kakao.profile.requestAuth`, `getCategories`, `requestAdd`, `list`
+- Kakao 토큰: `kakao.token.create` (from `aligoapi` npm package)
 - Kakao 템플릿: `kakao.templates.list/create/update/delete/requestReview`
 - 알림톡: `kakao.sendAlimtalk`
 - 친구톡: `kakao.sendFriendtalk`, `sendFriendtalkWideList`, `sendFriendtalkCarousel`

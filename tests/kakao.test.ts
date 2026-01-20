@@ -40,6 +40,42 @@ test('kakao auth uses apikey/userid fields and kakao base URL', async () => {
   }
 });
 
+test('kakao token uses path params for time and type', async () => {
+  const originalFetch = globalThis.fetch;
+  let capturedUrl = '';
+  let capturedBody: unknown;
+
+  globalThis.fetch = async (url, init) => {
+    capturedUrl = typeof url === 'string' ? url : String(url);
+    capturedBody = init?.body;
+    return new Response(JSON.stringify({ code: 0, message: 'ok' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+
+  try {
+    const client = createAligoClient({
+      key: 'k-key',
+      userId: 'k-user',
+    });
+
+    await client.kakao.token.create({
+      time: 30,
+      type: 'alimtalk',
+    });
+
+    assert.ok(capturedUrl.endsWith('/akv10/token/create/30/alimtalk'));
+    assert.ok(capturedBody instanceof URLSearchParams);
+    const params = capturedBody as URLSearchParams;
+    const encoded = params.toString();
+    assert.ok(encoded.includes('apikey=k-key'));
+    assert.ok(encoded.includes('userid=k-user'));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('kakao code < 0 raises AligoError carrying resultCode', async () => {
   const originalFetch = globalThis.fetch;
 

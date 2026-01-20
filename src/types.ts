@@ -425,12 +425,22 @@ export interface KakaoRemainResponse extends KakaoBaseResponse {
   };
 }
 
+export interface KakaoTokenCreateParams {
+  time: string | number;
+  type: string;
+}
+
+export type KakaoTokenResponse = KakaoBaseResponse & Record<string, unknown>;
+
 export interface KakaoNamespace {
   profile: {
     requestAuth(params: KakaoProfileAuthParams): Promise<KakaoBaseResponse>;
     requestAdd(params: KakaoProfileAddParams): Promise<KakaoBaseResponse>;
     getCategories(): Promise<KakaoCategoryResponse>;
     list(params?: KakaoProfileListParams): Promise<KakaoProfileListResponse>;
+  };
+  token: {
+    create(params: KakaoTokenCreateParams): Promise<KakaoTokenResponse>;
   };
   templates: {
     list(params: KakaoTemplateListParams): Promise<KakaoTemplateListResponse>;

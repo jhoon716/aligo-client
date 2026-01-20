@@ -22,6 +22,8 @@ import type {
   KakaoTemplateListParams,
   KakaoTemplateListResponse,
   KakaoTemplateResponse,
+  KakaoTokenCreateParams,
+  KakaoTokenResponse,
   KakaoUpdateTemplateParams,
 } from '../types.js';
 import { HttpClient } from '../http/client.js';
@@ -33,6 +35,9 @@ export function createKakaoNamespace(http: HttpClient) {
       requestAdd: (params: KakaoProfileAddParams) => requestProfileAdd(http, params),
       getCategories: () => getCategories(http),
       list: (params?: KakaoProfileListParams) => listProfiles(http, params),
+    },
+    token: {
+      create: (params: KakaoTokenCreateParams) => createToken(http, params),
     },
     templates: {
       list: (params: KakaoTemplateListParams) => listTemplates(http, params),
@@ -102,6 +107,23 @@ async function listProfiles(
       plusid: params?.plusId,
       senderkey: params?.senderKey,
     },
+  });
+}
+
+async function createToken(
+  http: HttpClient,
+  params: KakaoTokenCreateParams,
+): Promise<KakaoTokenResponse> {
+  if (!params.time || !params.type) {
+    throw new AligoError('time and type are required to create a Kakao token');
+  }
+
+  const time = encodeURIComponent(String(params.time));
+  const type = encodeURIComponent(String(params.type));
+
+  return http.post<KakaoTokenResponse>({
+    path: `/akv10/token/create/${time}/${type}`,
+    fields: {},
   });
 }
 
